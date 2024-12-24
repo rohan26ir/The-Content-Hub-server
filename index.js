@@ -77,6 +77,12 @@ async function run() {
       res.send(result);
     });
 
+    // Get All Blogs
+    app.get('/api/blogs', async (req, res) => {
+      const result = await blogsCollection.find().toArray();
+      res.send(result);
+    });
+
 
     // Ping MongoDB Connection to Verify
     // await client.db('admin').command({ ping: 1 });
