@@ -83,6 +83,14 @@ async function run() {
       res.send(result);
     });
 
+    // Get Blog by ID
+    app.get('/api/blog/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await blogsCollection.findOne(query);
+      res.send(result);
+    });
+
 
     // Ping MongoDB Connection to Verify
     // await client.db('admin').command({ ping: 1 });
