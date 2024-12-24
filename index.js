@@ -42,8 +42,15 @@ const verifyToken = (req, res, next) => {
   });
 };
 
+
 async function run() {
   try {
+
+    await client.connect();
+    console.log('Connected to MongoDB successfully!');
+
+
+
     const db = client.db('Content-hub');
     const blogsCollection = db.collection('blog');
 
@@ -55,8 +62,9 @@ async function run() {
       res
         .cookie('token', token, {
           httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
+          // secure: process.env.NODE_ENV === 'production',
+          secure: false,
+          // sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
         })
         .send({ success: true });
     });
@@ -65,14 +73,16 @@ async function run() {
     app.get('/logout', async (req, res) => {
       res.clearCookie('token', {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
+        // secure: process.env.NODE_ENV === 'production',
+        secure: false,
+        // sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
       }).send({ success: true });
     });
 
     // Add Blog
-    app.post('/api/addBlog', async (req, res) => {
+    app.post('/api/addBlog', verifyToken, async (req, res) => {
       const blogData = req.body;
+      blogData.createdAt = new Date(); // Automatically add createdAt timestamp
       const result = await blogsCollection.insertOne(blogData);
       res.send(result);
     });
