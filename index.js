@@ -104,6 +104,21 @@ async function run() {
       res.send(result);
     });
 
+    // Get Latest 6 Blogs
+    app.get('/api/latestBlogs', async (req, res) => {
+      try {
+        const result = await blogsCollection
+          .find()
+          .sort({ createdAt: -1 }) // Sort by `createdAt` in descending order
+          .limit(6) // Limit the result to 5 documents
+          .toArray();
+        res.send(result);
+      } catch (error) {
+        console.error('Error fetching latest blogs:', error);
+        res.status(500).send({ message: 'Failed to fetch latest blogs' });
+      }
+    });
+
 
     // Ping MongoDB Connection to Verify
     // await client.db('admin').command({ ping: 1 });
