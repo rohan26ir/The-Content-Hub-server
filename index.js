@@ -70,7 +70,13 @@ async function run() {
       }).send({ success: true });
     });
 
-    
+    // Add Blog
+    app.post('/api/addBlog', async (req, res) => {
+      const blogData = req.body;
+      const result = await blogsCollection.insertOne(blogData);
+      res.send(result);
+    });
+
 
     // Ping MongoDB Connection to Verify
     // await client.db('admin').command({ ping: 1 });
