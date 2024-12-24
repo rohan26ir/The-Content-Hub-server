@@ -91,6 +91,19 @@ async function run() {
       res.send(result);
     });
 
+    // Get All Blogs with Filters
+    app.get('/api/allBlogs', async (req, res) => {
+      const { filter, search, sort } = req.query;
+      let options = {};
+      if (sort) options = { sort: { deadline: sort === 'asc' ? 1 : -1 } };
+
+      let query = { title: { $regex: search, $options: 'i' } };
+      if (filter) query.category = filter;
+
+      const result = await blogsCollection.find(query, options).toArray();
+      res.send(result);
+    });
+
 
     // Ping MongoDB Connection to Verify
     // await client.db('admin').command({ ping: 1 });
