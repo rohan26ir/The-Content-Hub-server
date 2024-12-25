@@ -10,6 +10,7 @@ const cookieParser = require('cookie-parser');
 const corsOptions = {
   origin: ['http://localhost:5173'], 
   credentials: true,
+  methods: ['GET', 'POST', 'DELETE', 'PUT'],
   optionalSuccessStatus: 200,
 };
 
@@ -53,6 +54,7 @@ async function run() {
 
     const db = client.db('Content-hub');
     const blogsCollection = db.collection('blog');
+    const wishlistCollection = db.collection('wishlist')
 
     // Generate JWT Token
     app.post('/jwt', async (req, res) => {
@@ -128,6 +130,85 @@ async function run() {
         res.status(500).send({ message: 'Failed to fetch latest blogs' });
       }
     });
+
+    // Add to Wishlist
+  app.post('/addWishlist', async (req, res) => {
+    const wishlist = req.body;
+    const existingItem = await wishlistCollection.findOne({
+      reviewId: wishlist.reviewId,
+      userEmail: wishlist.userEmail,
+    });
+
+    if (!existingItem) {
+      const result = await wishlistCollection.insertOne(wishlist);
+      res.json(result);
+    } else {
+      res.status(400).json({ message: 'Item already in wishlist' });
+    }
+  });
+
+  // // Get Wishhlist by Email
+  // app.get('/getWishlist', async (req, res) => {
+  //   const { email } = req.query;
+  //   const result = await wishlistCollection.find({ userEmail: email }).toArray();
+  //   res.json(result);
+  // });
+
+  // Get Wishlist by Email with Sorting
+  app.get('/getWishlist', async (req, res) => {
+    const { email, category, search } = req.query;
+  
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
+  
+    try {
+      // Build the query to filter wishlist by email, category, and title search
+      const query = { userEmail: email };
+  
+      if (category && category !== 'All') {
+        query.category = category;
+      }
+  
+      if (search) {
+        query.title = { $regex: search, $options: 'i' }; // Case-insensitive search
+      }
+  
+      // Fetch data from the wishlist collection
+      const result = await wishlistCollection.find(query).toArray();
+      res.json(result);
+    } catch (error) {
+      console.error('Error fetching wishlist:', error);
+      res.status(500).json({ message: 'Failed to fetch wishlist' });
+    }
+  });
+  
+
+
+
+ // Delete Wishlist Item
+app.delete('/removeWishlist', async (req, res) => {
+  const { email, itemId } = req.query; // Access email and itemId from query parameters
+  
+  // Check if both parameters are provided
+  if (!email || !itemId) {
+    return res.status(400).json({ message: 'Email and itemId are required' });
+  }
+
+  const result = await wishlistCollection.deleteOne({
+    userEmail: email,
+    _id: new ObjectId(itemId), // Convert itemId to ObjectId
+  });
+
+  if (result.deletedCount === 0) {
+    return res.status(404).json({ message: 'Item not found in wishlist' });
+  }
+
+  res.json({ message: 'Item removed from wishlist successfully' });
+});
+
+
+
 
 
     // Ping MongoDB Connection to Verify
