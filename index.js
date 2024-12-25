@@ -55,6 +55,8 @@ async function run() {
     const db = client.db('Content-hub');
     const blogsCollection = db.collection('blog');
     const wishlistCollection = db.collection('wishlist')
+    const commentsCollection = db.collection('comments');
+
 
     // Generate JWT Token
     app.post('/jwt', async (req, res) => {
@@ -182,6 +184,65 @@ async function run() {
       res.status(500).json({ message: 'Failed to fetch wishlist' });
     }
   });
+
+
+
+// Add comment
+app.post('/api/addcomment', verifyToken, async (req, res) => {
+  const blogData = req.body;
+  blogData.createdAt = new Date(); // Automatically add createdAt timestamp
+  const result = await commentsCollection.insertOne(blogData);
+  res.send(result);
+});
+
+
+app.get('/api/addcomment', async (req, res) => {
+  const { blogId } = req.query;
+  const query = blogId ? { blogId } : {};
+  const result = await commentsCollection.find(query).toArray();
+  res.send(result);
+});
+
+
+app.delete('/api/comments/:id', async (req, res) => {
+  const { id } = req.params;
+  const result = await commentsCollection.deleteOne({ _id: new ObjectId(id) });
+  if (result.deletedCount > 0) {
+    res.send({ message: 'Comment deleted successfully' });
+  } else {
+    res.status(404).send({ message: 'Comment not found' });
+  }
+});
+
+
+
+
+
+
+// end 
+
+
+  app.get('/api/featuredBlogs', async (req, res) => {
+    try {
+      // Fetch all blogs and calculate word count for each
+      const blogs = await blogsCollection.find().toArray();
+  
+      // Sort blogs by word count of the longDescription in descending order
+      const sortedBlogs = blogs
+        .map((blog) => ({
+          ...blog,
+          wordCount: blog.longDescription ? blog.longDescription.split(' ').length : 0,
+        }))
+        .sort((a, b) => b.wordCount - a.wordCount)
+        .slice(0, 10); // Get the top 10 blogs
+  
+      res.json(sortedBlogs);
+    } catch (error) {
+      console.error('Error fetching featured blogs:', error);
+      res.status(500).json({ message: 'Failed to fetch featured blogs' });
+    }
+  });
+  
   
 
 
