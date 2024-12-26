@@ -8,7 +8,10 @@ const app = express();
 const cookieParser = require('cookie-parser');
 
 const corsOptions = {
-  origin: ['http://localhost:5173'], 
+  origin: ['http://localhost:5173',
+          'https://content-hub-24.web.app',
+          'https://content-hub-24.firebaseapp.com',
+  ], 
   credentials: true,
   methods: ['GET', 'POST', 'DELETE', 'PUT'],
   optionalSuccessStatus: 200,
@@ -47,8 +50,8 @@ const verifyToken = (req, res, next) => {
 async function run() {
   try {
 
-    await client.connect();
-    console.log('Connected to MongoDB successfully!');
+    // await client.connect();
+    // console.log('Connected to MongoDB successfully!');
 
 
 
@@ -66,9 +69,9 @@ async function run() {
       res
         .cookie('token', token, {
           httpOnly: true,
-          // secure: process.env.NODE_ENV === 'production',
-          secure: false,
-          // sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
+          secure: process.env.NODE_ENV === 'production',
+          // secure: false,
+          sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
         })
         .send({ success: true });
     });
@@ -104,6 +107,32 @@ async function run() {
       const result = await blogsCollection.findOne(query);
       res.send(result);
     });
+
+
+    // Update Blog
+app.put('/api/blog/:id', verifyToken, async (req, res) => {
+  const { id } = req.params;
+  const updatedBlogData = req.body;
+  const filter = { _id: new ObjectId(id) };
+  const updateDoc = {
+    $set: {
+      ...updatedBlogData,
+      updatedAt: new Date(), // Automatically add updatedAt timestamp
+    },
+  };
+
+  try {
+    const result = await blogsCollection.updateOne(filter, updateDoc);
+    if (result.matchedCount === 0) {
+      return res.status(404).send({ message: 'Blog not found' });
+    }
+    res.send({ message: 'Blog updated successfully', result });
+  } catch (error) {
+    console.error('Error updating blog:', error);
+    res.status(500).send({ message: 'Failed to update blog', error });
+  }
+});
+
 
     // Get All Blogs with Filters
     app.get('/api/allBlogs', async (req, res) => {
@@ -282,7 +311,7 @@ app.delete('/removeWishlist', async (req, res) => {
 run().catch(console.dir);
 
 app.get('/', (req, res) => {
-  res.send('Hello from SoloSphere Server....');
+  res.send('The Content Hub is running....');
 });
 
-app.listen(port, () => console.log(`Server running on port ${port}`));
+app.listen(port, () => console.log(`Content Hub running on port ${port}`));
